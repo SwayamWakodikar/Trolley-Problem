@@ -1,283 +1,340 @@
 import { useState, useEffect } from 'react';
-import { Trash2, Save, TrendingUp, Clock, Brain } from 'lucide-react';
+import { ThumbsUp, ThumbsDown, Users, TrendingUp, MessageCircle } from 'lucide-react';
 
-interface Choice {
-  choice: string;
-  timestamp: string;
+interface VoteData {
+  pullLeverVotes: number;
+  doNothingVotes: number;
+  totalVotes: number;
 }
 
 interface Reflection {
-  question: string;
-  answer: string;
+  id: string;
+  text: string;
+  choice: 'pull' | 'nothing';
   timestamp: string;
+  upvotes: number;
+  downvotes: number;
 }
 
 function ReflectionPage() {
-  const [choices, setChoices] = useState<Choice[]>([]);
-  const [reflections, setReflections] = useState<Reflection[]>([]);
-  const [answers, setAnswers] = useState({
-    utilitarian: '',
-    personal: '',
-    dilemma: '',
+  const [voteData, setVoteData] = useState<VoteData>({
+    pullLeverVotes: 0,
+    doNothingVotes: 0,
+    totalVotes: 0,
   });
+  const [reflections, setReflections] = useState<Reflection[]>([]);
+  const [newReflection, setNewReflection] = useState('');
+  const [selectedChoice, setSelectedChoice] = useState<'pull' | 'nothing'>('pull');
   const [loading, setLoading] = useState(true);
-  const [saveStatus, setSaveStatus] = useState<{[key: string]: string}>({});
+  const [hasVoted, setHasVoted] = useState(false);
+  const [userVote, setUserVote] = useState<'pull' | 'nothing' | null>(null);
 
+  // Simulated data - In a real app, this would come from a backend
   useEffect(() => {
-    loadData();
+    // Simulate loading data
+    setTimeout(() => {
+      setVoteData({
+        pullLeverVotes: 487,
+        doNothingVotes: 213,
+        totalVotes: 700,
+      });
+      
+      setReflections([
+        {
+          id: '1',
+          text: 'I chose to pull the lever because saving five lives seemed more important than one, even though it felt terrible to actively cause someone\'s death.',
+          choice: 'pull',
+          timestamp: new Date(Date.now() - 3600000).toISOString(),
+          upvotes: 42,
+          downvotes: 8,
+        },
+        {
+          id: '2',
+          text: 'I couldn\'t bring myself to pull the lever. Taking an action that directly kills someone feels fundamentally wrong, regardless of the math.',
+          choice: 'nothing',
+          timestamp: new Date(Date.now() - 7200000).toISOString(),
+          upvotes: 31,
+          downvotes: 12,
+        },
+        {
+          id: '3',
+          text: 'The hardest part was realizing there is no "right" answer. Both choices involve loss of life, and I had to accept that moral certainty is often impossible.',
+          choice: 'pull',
+          timestamp: new Date(Date.now() - 10800000).toISOString(),
+          upvotes: 58,
+          downvotes: 3,
+        },
+      ]);
+      
+      setLoading(false);
+    }, 500);
   }, []);
 
-  const loadData = async () => {
-    try {
-      const choicesResult = await window.storage.get('trolley_choices', false);
-      const reflectionsResult = await window.storage.get('trolley_reflections', false);
-      
-      if (choicesResult) {
-        setChoices(JSON.parse(choicesResult.value));
-      }
-      if (reflectionsResult) {
-        setReflections(JSON.parse(reflectionsResult.value));
-      }
-    } catch (error) {
-      console.log('No previous data found');
-    }
-    setLoading(false);
-  };
-
-  const handleSaveReflection = async (question: string, answer: string, key: string) => {
-    if (!answer.trim()) {
-      setSaveStatus({ ...saveStatus, [key]: 'empty' });
-      setTimeout(() => setSaveStatus({}), 2000);
-      return;
-    }
-
-    const newReflection = { question, answer, timestamp: new Date().toISOString() };
-    const updatedReflections = [...reflections, newReflection];
+  const handleVote = (choice: 'pull' | 'nothing') => {
+    if (hasVoted) return;
     
-    try {
-      await window.storage.set('trolley_reflections', JSON.stringify(updatedReflections), false);
-      setReflections(updatedReflections);
-      setSaveStatus({ ...saveStatus, [key]: 'success' });
-      setTimeout(() => setSaveStatus({}), 2000);
-    } catch (error) {
-      setSaveStatus({ ...saveStatus, [key]: 'error' });
-      setTimeout(() => setSaveStatus({}), 2000);
-    }
+    setVoteData(prev => ({
+      pullLeverVotes: choice === 'pull' ? prev.pullLeverVotes + 1 : prev.pullLeverVotes,
+      doNothingVotes: choice === 'nothing' ? prev.doNothingVotes + 1 : prev.doNothingVotes,
+      totalVotes: prev.totalVotes + 1,
+    }));
+    
+    setHasVoted(true);
+    setUserVote(choice);
   };
 
-  const handleReset = async () => {
-    if (window.confirm('Are you sure you want to delete all your data? This cannot be undone.')) {
-      try {
-        await window.storage.delete('trolley_choices', false);
-        await window.storage.delete('trolley_reflections', false);
-        setChoices([]);
-        setReflections([]);
-        setAnswers({ utilitarian: '', personal: '', dilemma: '' });
-      } catch (error) {
-        console.error('Error resetting data:', error);
-      }
-    }
+  const handleSubmitReflection = () => {
+    if (!newReflection.trim() || !hasVoted) return;
+    
+    const reflection: Reflection = {
+      id: Date.now().toString(),
+      text: newReflection,
+      choice: selectedChoice,
+      timestamp: new Date().toISOString(),
+      upvotes: 0,
+      downvotes: 0,
+    };
+    
+    setReflections([reflection, ...reflections]);
+    setNewReflection('');
   };
 
-  const pullCount = choices.filter(c => c.choice === 'pull').length;
-  const nothingCount = choices.filter(c => c.choice === 'nothing').length;
-  const totalChoices = pullCount + nothingCount;
-  const pullPercentage = totalChoices > 0 ? Math.round((pullCount / totalChoices) * 100) : 0;
-
-  const getStatusIcon = (key: string) => {
-    const status = saveStatus[key];
-    if (status === 'success') return <span className="text-green-600">✓ Saved!</span>;
-    if (status === 'error') return <span className="text-red-600">✗ Error</span>;
-    if (status === 'empty') return <span className="text-yellow-600">⚠ Empty</span>;
-    return null;
+  const handleReflectionVote = (id: string, voteType: 'up' | 'down') => {
+    setReflections(prev =>
+      prev.map(ref =>
+        ref.id === id
+          ? {
+              ...ref,
+              upvotes: voteType === 'up' ? ref.upvotes + 1 : ref.upvotes,
+              downvotes: voteType === 'down' ? ref.downvotes + 1 : ref.downvotes,
+            }
+          : ref
+      )
+    );
   };
 
-  const reflectionQuestions = [
-    {
-      key: 'utilitarian',
-      label: 'Was your decision utilitarian (focused on outcomes and maximizing good)?',
-      placeholder: 'Consider whether you prioritized the greater good or individual rights...'
-    },
-    {
-      key: 'personal',
-      label: 'Would your answer change if you personally knew the people involved?',
-      placeholder: 'How does personal connection affect moral reasoning...'
-    },
-    {
-      key: 'dilemma',
-      label: 'What was the most difficult part of making this decision?',
-      placeholder: 'Reflect on the emotional and logical challenges you faced...'
-    }
-  ];
+  const pullPercentage = voteData.totalVotes > 0 
+    ? Math.round((voteData.pullLeverVotes / voteData.totalVotes) * 100) 
+    : 0;
+
+  const doNothingPercentage = 100 - pullPercentage;
+
+  const getTimeSince = (timestamp: string) => {
+    const seconds = Math.floor((Date.now() - new Date(timestamp).getTime()) / 1000);
+    if (seconds < 60) return `${seconds}s ago`;
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    return `${days}d ago`;
+  };
 
   if (loading) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-12 flex items-center justify-center">
-        <div className="text-xl text-gray-600">Loading your reflections...</div>
+        <div className="text-xl text-gray-600">Loading community insights...</div>
       </div>
     );
   }
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-12">
-      <div className="opacity-0 animate-fadeIn">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Your Reflection Journey</h1>
-          <p className="text-gray-600">Explore your moral decision-making patterns and insights</p>
+      <div className="mb-8">
+        <h1 className="text-4xl font-bold text-gray-900 mb-2">Community Reflections</h1>
+        <p className="text-gray-600">See how others have approached this moral dilemma</p>
+      </div>
+
+      {/* Voting Section */}
+      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl shadow-lg p-6 mb-8 border border-blue-100">
+        <div className="flex items-center gap-2 mb-6">
+          <Users className="text-blue-600" size={24} />
+          <h2 className="text-2xl font-bold text-gray-900">Global Poll</h2>
         </div>
 
-        {/* Statistics Card */}
-        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl shadow-lg p-6 mb-8 border border-blue-100">
-          <div className="flex items-center gap-2 mb-4">
-            <TrendingUp className="text-blue-600" size={24} />
-            <h2 className="text-2xl font-bold text-gray-900">Decision Analytics</h2>
-          </div>
-          
-          {choices.length === 0 ? (
-            <div className="text-center py-8">
-              <Brain className="mx-auto mb-3 text-gray-400" size={48} />
-              <p className="text-gray-600 text-lg">No decisions recorded yet.</p>
-              <p className="text-gray-500 mt-2">Try the simulation to begin your journey!</p>
+        {!hasVoted ? (
+          <div>
+            <p className="text-gray-700 mb-4 text-lg">What would you do?</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <button
+                onClick={() => handleVote('pull')}
+                className="bg-blue-600 text-white p-6 rounded-lg hover:bg-blue-700
+                           active:scale-95 transition-all shadow-md text-left"
+              >
+                <div className="text-2xl mb-2">🔄</div>
+                <div className="font-bold text-lg mb-1">Pull the Lever</div>
+                <div className="text-sm opacity-90">Save 5 lives, sacrifice 1</div>
+              </button>
+              
+              <button
+                onClick={() => handleVote('nothing')}
+                className="bg-gray-600 text-white p-6 rounded-lg hover:bg-gray-700
+                           active:scale-95 transition-all shadow-md text-left"
+              >
+                <div className="text-2xl mb-2">⏸️</div>
+                <div className="font-bold text-lg mb-1">Do Nothing</div>
+                <div className="text-sm opacity-90">Let fate take its course</div>
+              </button>
             </div>
-          ) : (
-            <div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-                <div className="bg-white p-4 rounded-lg shadow-sm">
-                  <p className="text-3xl font-bold text-blue-600">{pullCount}</p>
-                  <p className="text-gray-700 text-sm">Pulled Lever</p>
-                  <p className="text-xs text-gray-500 mt-1">{pullPercentage}% of time</p>
-                </div>
-                <div className="bg-white p-4 rounded-lg shadow-sm">
-                  <p className="text-3xl font-bold text-gray-600">{nothingCount}</p>
-                  <p className="text-gray-700 text-sm">Did Nothing</p>
-                  <p className="text-xs text-gray-500 mt-1">{100 - pullPercentage}% of time</p>
-                </div>
-                <div className="bg-white p-4 rounded-lg shadow-sm">
-                  <p className="text-3xl font-bold text-indigo-600">{totalChoices}</p>
-                  <p className="text-gray-700 text-sm">Total Trials</p>
-                  <p className="text-xs text-gray-500 mt-1">Decisions made</p>
-                </div>
-              </div>
+          </div>
+        ) : (
+          <div>
+            <div className="bg-white p-4 rounded-lg shadow-sm mb-4">
+              <p className="text-green-600 font-semibold mb-2">✓ Thank you for voting!</p>
+              <p className="text-gray-700">
+                You chose to {userVote === 'pull' ? 'pull the lever' : 'do nothing'}
+              </p>
+            </div>
 
-              {/* Consistency Insight */}
-              {totalChoices >= 3 && (
-                <div className="bg-white p-4 rounded-lg shadow-sm mb-4">
-                  <p className="font-semibold text-gray-900 mb-2">🧠 Insight:</p>
-                  <p className="text-gray-700">
-                    {pullPercentage > 70 
-                      ? 'You tend toward utilitarian thinking, consistently choosing to maximize outcomes.'
-                      : pullPercentage < 30
-                      ? 'You lean toward deontological ethics, valuing the principle of non-intervention.'
-                      : 'Your decisions vary, suggesting you weigh multiple ethical frameworks in your reasoning.'}
-                  </p>
-                </div>
-              )}
-
-              {/* Recent History */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
               <div className="bg-white p-4 rounded-lg shadow-sm">
-                <div className="flex items-center gap-2 mb-3">
-                  <Clock size={18} className="text-gray-600" />
-                  <h3 className="font-semibold text-gray-900">Recent History</h3>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-semibold text-gray-900">Pull Lever</span>
+                  <span className="text-2xl font-bold text-blue-600">{pullPercentage}%</span>
                 </div>
-                <div className="space-y-2">
-                  {choices.slice(-5).reverse().map((choice, index) => (
-                    <div key={index} className="flex justify-between items-center p-2 bg-gray-50 rounded text-sm">
-                      <span className="font-medium">
-                        {choice.choice === 'pull' ? '🔄 Pulled the lever' : '⏸️ Did nothing'}
-                      </span>
-                      <span className="text-gray-500">
-                        {new Date(choice.timestamp).toLocaleString()}
-                      </span>
-                    </div>
-                  ))}
+                <div className="w-full bg-gray-200 rounded-full h-3">
+                  <div
+                    className="bg-blue-600 h-3 rounded-full transition-all duration-500"
+                    style={{ width: `${pullPercentage}%` }}
+                  />
                 </div>
+                <p className="text-sm text-gray-600 mt-2">{voteData.pullLeverVotes.toLocaleString()} votes</p>
+              </div>
+
+              <div className="bg-white p-4 rounded-lg shadow-sm">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-semibold text-gray-900">Do Nothing</span>
+                  <span className="text-2xl font-bold text-gray-600">{doNothingPercentage}%</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-3">
+                  <div
+                    className="bg-gray-600 h-3 rounded-full transition-all duration-500"
+                    style={{ width: `${doNothingPercentage}%` }}
+                  />
+                </div>
+                <p className="text-sm text-gray-600 mt-2">{voteData.doNothingVotes.toLocaleString()} votes</p>
               </div>
             </div>
-          )}
-        </div>
 
-        {/* Reflection Questions */}
-        <div className="bg-white rounded-xl shadow-lg p-6 mb-8 border border-gray-200">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Deep Reflection</h2>
-
-          <div className="space-y-6">
-            {reflectionQuestions.map(({ key, label, placeholder }) => (
-              <div key={key} className="pb-6 border-b border-gray-200 last:border-0 last:pb-0">
-                <label className="block text-lg font-semibold text-gray-900 mb-3">
-                  {label}
-                </label>
-                <textarea
-                  value={answers[key as keyof typeof answers]}
-                  onChange={(e) => setAnswers({ ...answers, [key]: e.target.value })}
-                  className="w-full p-3 border-2 border-gray-300 rounded-lg focus:ring-2
-                             focus:ring-blue-500 focus:border-blue-500 resize-none transition-all"
-                  rows={4}
-                  placeholder={placeholder}
-                />
-                <div className="flex items-center justify-between mt-3">
-                  <button
-                    onClick={() => handleSaveReflection(label, answers[key as keyof typeof answers], key)}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700
-                               active:scale-95 transition-all flex items-center gap-2 shadow-sm"
-                  >
-                    <Save size={16} />
-                    Save Response
-                  </button>
-                  <span className="text-sm font-medium">{getStatusIcon(key)}</span>
-                </div>
+            <div className="bg-white p-4 rounded-lg shadow-sm">
+              <div className="flex items-center gap-2">
+                <TrendingUp size={18} className="text-gray-600" />
+                <p className="text-gray-700">
+                  <strong>{voteData.totalVotes.toLocaleString()}</strong> people have participated
+                </p>
               </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Past Reflections */}
-        {reflections.length > 0 && (
-          <div className="bg-white rounded-xl shadow-lg p-6 mb-8 border border-gray-200">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Your Past Reflections</h2>
-            <p className="text-gray-600 mb-4 text-sm">
-              Showing your {Math.min(reflections.length, 5)} most recent reflections
-            </p>
-            <div className="space-y-4">
-              {reflections.slice(-5).reverse().map((reflection, index) => (
-                <div key={index} className="p-4 bg-gradient-to-r from-gray-50 to-blue-50 rounded-lg border border-gray-200">
-                  <p className="font-semibold text-gray-900 mb-2">{reflection.question}</p>
-                  <p className="text-gray-700 mb-2 italic">"{reflection.answer}"</p>
-                  <p className="text-sm text-gray-500">
-                    {new Date(reflection.timestamp).toLocaleString()}
-                  </p>
-                </div>
-              ))}
             </div>
           </div>
         )}
-
-        {/* Data Management */}
-        <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Data Management</h2>
-          <p className="text-gray-600 mb-4">
-            Your choices and reflections are stored securely in your browser. 
-            This data persists across sessions and is private to you.
-          </p>
-          <button
-            onClick={handleReset}
-            className="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700
-                       active:scale-95 transition-all flex items-center gap-2 shadow-sm"
-          >
-            <Trash2 size={20} />
-            Reset All Data
-          </button>
-        </div>
       </div>
 
-      <style>{`
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fadeIn {
-          animation: fadeIn 0.6s ease-out forwards;
-        }
-      `}</style>
+      {/* Share Reflection Section */}
+      {hasVoted && (
+        <div className="bg-white rounded-xl shadow-lg p-6 mb-8 border border-gray-200">
+          <div className="flex items-center gap-2 mb-4">
+            <MessageCircle className="text-blue-600" size={24} />
+            <h2 className="text-2xl font-bold text-gray-900">Share Your Thoughts</h2>
+          </div>
+
+          <div className="mb-4">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Your reflection on this dilemma:
+            </label>
+            <textarea
+              value={newReflection}
+              onChange={(e) => setNewReflection(e.target.value)}
+              className="w-full p-3 border-2 border-gray-300 rounded-lg focus:ring-2
+                         focus:ring-blue-500 focus:border-blue-500 resize-none transition-all"
+              rows={4}
+              placeholder="What made this decision difficult for you? Share your reasoning..."
+              maxLength={500}
+            />
+            <div className="flex justify-between items-center mt-2">
+              <span className="text-sm text-gray-500">{newReflection.length}/500</span>
+              <div className="flex items-center gap-2">
+                <label className="text-sm text-gray-700">Your choice:</label>
+                <select
+                  value={selectedChoice}
+                  onChange={(e) => setSelectedChoice(e.target.value as 'pull' | 'nothing')}
+                  className="border-2 border-gray-300 rounded px-3 py-1 text-sm"
+                >
+                  <option value="pull">Pulled Lever</option>
+                  <option value="nothing">Did Nothing</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <button
+            onClick={handleSubmitReflection}
+            disabled={!newReflection.trim()}
+            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700
+                       disabled:bg-gray-400 disabled:cursor-not-allowed
+                       active:scale-95 transition-all"
+          >
+            Share Reflection
+          </button>
+        </div>
+      )}
+
+      {/* Community Reflections */}
+      <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+        <h2 className="text-2xl font-bold text-gray-900 mb-6">Community Reflections</h2>
+
+        <div className="space-y-4">
+          {reflections.map((reflection) => (
+            <div
+              key={reflection.id}
+              className={`p-4 rounded-lg border-2 transition-all ${
+                reflection.choice === 'pull'
+                  ? 'bg-blue-50 border-blue-200'
+                  : 'bg-gray-50 border-gray-200'
+              }`}
+            >
+              <div className="flex items-start justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">
+                    {reflection.choice === 'pull' ? '🔄' : '⏸️'}
+                  </span>
+                  <span className="font-semibold text-gray-900">
+                    {reflection.choice === 'pull' ? 'Pulled the lever' : 'Did nothing'}
+                  </span>
+                </div>
+                <span className="text-sm text-gray-500">{getTimeSince(reflection.timestamp)}</span>
+              </div>
+
+              <p className="text-gray-700 mb-3 leading-relaxed">{reflection.text}</p>
+
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={() => handleReflectionVote(reflection.id, 'up')}
+                  className="flex items-center gap-1 text-gray-600 hover:text-green-600
+                             transition-colors"
+                >
+                  <ThumbsUp size={16} />
+                  <span className="text-sm font-medium">{reflection.upvotes}</span>
+                </button>
+
+                <button
+                  onClick={() => handleReflectionVote(reflection.id, 'down')}
+                  className="flex items-center gap-1 text-gray-600 hover:text-red-600
+                             transition-colors"
+                >
+                  <ThumbsDown size={16} />
+                  <span className="text-sm font-medium">{reflection.downvotes}</span>
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {reflections.length === 0 && (
+          <div className="text-center py-8 text-gray-500">
+            <MessageCircle size={48} className="mx-auto mb-3 opacity-50" />
+            <p>No reflections yet. Be the first to share your thoughts!</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
