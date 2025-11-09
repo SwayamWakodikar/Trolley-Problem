@@ -70,13 +70,13 @@ app.post('/api/votes', async (req, res) => {
     //   return res.status(400).json({ error: 'You have already voted' });
     // }
 
-    // const vote = new Vote({
-    //   choice,
-    //   ipAddress,
-    //   userAgent
-    // });
+    const vote = new Vote({
+      choice,
+      //ipAddress,
+      //userAgent
+    });
 
-    // await vote.save();
+    await vote.save();
     
     // Return updated statistics
     const pullVotes = await Vote.countDocuments({ choice: 'pull' });
