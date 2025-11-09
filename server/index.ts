@@ -21,8 +21,6 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/trolley-p
 // Vote Schema
 const voteSchema = new mongoose.Schema({
   choice: { type: String, enum: ['pull', 'nothing'], required: true },
-  ipAddress: { type: String }, // Optional: to prevent duplicate votes
-  userAgent: { type: String },
   timestamp: { type: Date, default: Date.now }
 });
 
@@ -42,21 +40,29 @@ const Reflection = mongoose.model('Reflection', reflectionSchema);
 // Routes
 
 // Get vote statistics
-app.get('/api/votes', async (req, res) => {
+// Submit a vote
+app.post('/api/votes', async (req, res) => {
   try {
-    const pullVotes = await Vote.countDocuments({ choice: 'pull' });
-    const nothingVotes = await Vote.countDocuments({ choice: 'nothing' });
-    
-    res.json({
-      pullLeverVotes: pullVotes,
-      doNothingVotes: nothingVotes,
-      totalVotes: pullVotes + nothingVotes
+    const { choice } = req.body;
+
+    if (!choice) {
+      return res.status(400).json({ message: 'Choice is required' });
+    }
+
+    const vote = new Vote({ choice });
+    await vote.save();
+
+    return res.status(201).json({
+      message: 'Vote saved successfully',
+      vote
     });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch votes' });
+    console.error('Error saving vote:', error);
+    return res.status(500).json({
+      message: 'Error saving vote'
+    });
   }
 });
-
 // Submit a vote
 app.post('/api/votes', async (req, res) => {
   try {
