@@ -1,13 +1,6 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-/* Works on most browsers */
-body {
-  overflow: auto;          /* allow scrolling */
-  scrollbar-width: none;   /* Firefox */
-}
-
-/* Chrome, Edge, Safari */
-body::-webkit-scrollbar {
+::-webkit-scrollbar {
   display: none;
 }
