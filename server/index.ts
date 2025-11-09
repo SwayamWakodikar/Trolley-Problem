@@ -9,27 +9,19 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// CORS Configuration - Allow all origins for now (you can restrict later)
-app.use(cors({
-  origin: true, // Allows all origins temporarily for testing
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
-
+// Middleware
+app.use(cors());
 app.use(express.json());
 
 // MongoDB Connection
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/trolley-problem';
-
-mongoose.connect(MONGODB_URI)
+mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/trolley-problem')
   .then(() => console.log('✅ MongoDB connected'))
   .catch((err) => console.error('❌ MongoDB connection error:', err));
 
 // Vote Schema
 const voteSchema = new mongoose.Schema({
   choice: { type: String, enum: ['pull', 'nothing'], required: true },
-  ipAddress: { type: String },
+  ipAddress: { type: String }, // Optional: to prevent duplicate votes
   userAgent: { type: String },
   timestamp: { type: Date, default: Date.now }
 });
@@ -47,32 +39,20 @@ const reflectionSchema = new mongoose.Schema({
 
 const Reflection = mongoose.model('Reflection', reflectionSchema);
 
-// Health check endpoint
-app.get('/', (req, res) => {
-  res.json({ 
-    status: 'ok', 
-    message: 'Trolley Problem API is running',
-    timestamp: new Date().toISOString()
-  });
-});
+// Routes
 
 // Get vote statistics
 app.get('/api/votes', async (req, res) => {
   try {
-    console.log('GET /api/votes - Fetching vote statistics');
     const pullVotes = await Vote.countDocuments({ choice: 'pull' });
     const nothingVotes = await Vote.countDocuments({ choice: 'nothing' });
     
-    const result = {
+    res.json({
       pullLeverVotes: pullVotes,
       doNothingVotes: nothingVotes,
       totalVotes: pullVotes + nothingVotes
-    };
-    
-    console.log('Vote statistics:', result);
-    res.json(result);
+    });
   } catch (error) {
-    console.error('Error fetching votes:', error);
     res.status(500).json({ error: 'Failed to fetch votes' });
   }
 });
@@ -81,19 +61,12 @@ app.get('/api/votes', async (req, res) => {
 app.post('/api/votes', async (req, res) => {
   try {
     const { choice } = req.body;
-    console.log('POST /api/votes - Received vote:', choice);
-    
-    if (!choice || !['pull', 'nothing'].includes(choice)) {
-      return res.status(400).json({ error: 'Invalid choice. Must be "pull" or "nothing"' });
-    }
-
-    const ipAddress = req.ip || req.headers['x-forwarded-for'] || 'unknown';
-    const userAgent = req.headers['user-agent'] || 'unknown';
+    const ipAddress = req.ip;
+    const userAgent = req.headers['user-agent'];
 
     // Optional: Check if this IP has already voted
     const existingVote = await Vote.findOne({ ipAddress });
     if (existingVote) {
-      console.log('IP already voted:', ipAddress);
       return res.status(400).json({ error: 'You have already voted' });
     }
 
@@ -104,7 +77,6 @@ app.post('/api/votes', async (req, res) => {
     });
 
     await vote.save();
-    console.log('Vote saved successfully');
     
     // Return updated statistics
     const pullVotes = await Vote.countDocuments({ choice: 'pull' });
@@ -117,7 +89,6 @@ app.post('/api/votes', async (req, res) => {
       totalVotes: pullVotes + nothingVotes
     });
   } catch (error) {
-    console.error('Error submitting vote:', error);
     res.status(500).json({ error: 'Failed to submit vote' });
   }
 });
@@ -125,15 +96,12 @@ app.post('/api/votes', async (req, res) => {
 // Get all reflections
 app.get('/api/reflections', async (req, res) => {
   try {
-    console.log('GET /api/reflections - Fetching reflections');
     const reflections = await Reflection.find()
       .sort({ timestamp: -1 })
-      .limit(50);
+      .limit(50); // Limit to last 50 reflections
     
-    console.log(`Found ${reflections.length} reflections`);
     res.json(reflections);
   } catch (error) {
-    console.error('Error fetching reflections:', error);
     res.status(500).json({ error: 'Failed to fetch reflections' });
   }
 });
@@ -142,14 +110,9 @@ app.get('/api/reflections', async (req, res) => {
 app.post('/api/reflections', async (req, res) => {
   try {
     const { text, choice } = req.body;
-    console.log('POST /api/reflections - Received:', { text: text?.substring(0, 50), choice });
 
     if (!text || text.length > 500) {
-      return res.status(400).json({ error: 'Invalid reflection text. Must be 1-500 characters.' });
-    }
-
-    if (!choice || !['pull', 'nothing'].includes(choice)) {
-      return res.status(400).json({ error: 'Invalid choice. Must be "pull" or "nothing"' });
+      return res.status(400).json({ error: 'Invalid reflection text' });
     }
 
     const reflection = new Reflection({
@@ -158,10 +121,8 @@ app.post('/api/reflections', async (req, res) => {
     });
 
     await reflection.save();
-    console.log('Reflection saved successfully');
     res.json(reflection);
   } catch (error) {
-    console.error('Error submitting reflection:', error);
     res.status(500).json({ error: 'Failed to submit reflection' });
   }
 });
@@ -170,13 +131,7 @@ app.post('/api/reflections', async (req, res) => {
 app.post('/api/reflections/:id/vote', async (req, res) => {
   try {
     const { id } = req.params;
-    const { voteType } = req.body;
-    
-    console.log(`POST /api/reflections/${id}/vote - Vote type:`, voteType);
-
-    if (!['up', 'down'].includes(voteType)) {
-      return res.status(400).json({ error: 'Invalid vote type. Must be "up" or "down"' });
-    }
+    const { voteType } = req.body; // 'up' or 'down'
 
     const reflection = await Reflection.findById(id);
     if (!reflection) {
@@ -190,23 +145,15 @@ app.post('/api/reflections/:id/vote', async (req, res) => {
     }
 
     await reflection.save();
-    console.log('Reflection vote updated');
     res.json(reflection);
   } catch (error) {
-    console.error('Error voting on reflection:', error);
     res.status(500).json({ error: 'Failed to vote on reflection' });
   }
 });
 
-// 404 handler
-app.use((req, res) => {
-  console.log('404 - Route not found:', req.method, req.path);
-  res.status(404).json({ error: 'Route not found' });
-});
-
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📡 API endpoints available at http://localhost:${PORT}/api`);
 });
 
+// Export for use in other files
 export { Vote, Reflection };
