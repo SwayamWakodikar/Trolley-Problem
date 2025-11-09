@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
-import { ThumbsUp, ThumbsDown, Users, TrendingUp, MessageCircle } from 'lucide-react';
+import { ThumbsUp, ThumbsDown, Users, TrendingUp, MessageCircle, AlertCircle } from 'lucide-react';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 interface VoteData {
   pullLeverVotes: number;
@@ -8,7 +10,7 @@ interface VoteData {
 }
 
 interface Reflection {
-  id: string;
+  _id: string;
   text: string;
   choice: 'pull' | 'nothing';
   timestamp: string;
@@ -28,89 +30,133 @@ function ReflectionPage() {
   const [loading, setLoading] = useState(true);
   const [hasVoted, setHasVoted] = useState(false);
   const [userVote, setUserVote] = useState<'pull' | 'nothing' | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
-  // Simulated data - In a real app, this would come from a backend
   useEffect(() => {
-    // Simulate loading data
-    setTimeout(() => {
-      setVoteData({
-        pullLeverVotes: 487,
-        doNothingVotes: 213,
-        totalVotes: 700,
-      });
-      
-      setReflections([
-        {
-          id: '1',
-          text: 'I chose to pull the lever because saving five lives seemed more important than one, even though it felt terrible to actively cause someone\'s death.',
-          choice: 'pull',
-          timestamp: new Date(Date.now() - 3600000).toISOString(),
-          upvotes: 42,
-          downvotes: 8,
-        },
-        {
-          id: '2',
-          text: 'I couldn\'t bring myself to pull the lever. Taking an action that directly kills someone feels fundamentally wrong, regardless of the math.',
-          choice: 'nothing',
-          timestamp: new Date(Date.now() - 7200000).toISOString(),
-          upvotes: 31,
-          downvotes: 12,
-        },
-        {
-          id: '3',
-          text: 'The hardest part was realizing there is no "right" answer. Both choices involve loss of life, and I had to accept that moral certainty is often impossible.',
-          choice: 'pull',
-          timestamp: new Date(Date.now() - 10800000).toISOString(),
-          upvotes: 58,
-          downvotes: 3,
-        },
-      ]);
-      
-      setLoading(false);
-    }, 500);
+    loadData();
+    checkIfVoted();
   }, []);
 
-  const handleVote = (choice: 'pull' | 'nothing') => {
+  const checkIfVoted = () => {
+    const voted = localStorage.getItem('trolley_has_voted');
+    const vote = localStorage.getItem('trolley_user_vote');
+    if (voted === 'true' && vote) {
+      setHasVoted(true);
+      setUserVote(vote as 'pull' | 'nothing');
+    }
+  };
+
+  const loadData = async () => {
+    try {
+      setError(null);
+      
+      // Fetch votes
+      const votesResponse = await fetch(`${API_URL}/votes`);
+      if (!votesResponse.ok) throw new Error('Failed to fetch votes');
+      const votesData = await votesResponse.json();
+      setVoteData(votesData);
+
+      // Fetch reflections
+      const reflectionsResponse = await fetch(`${API_URL}/reflections`);
+      if (!reflectionsResponse.ok) throw new Error('Failed to fetch reflections');
+      const reflectionsData = await reflectionsResponse.json();
+      setReflections(reflectionsData);
+
+      setLoading(false);
+    } catch (err) {
+      setError('Failed to load data. Please check if the server is running.');
+      console.error(err);
+      setLoading(false);
+    }
+  };
+
+  const handleVote = async (choice: 'pull' | 'nothing') => {
     if (hasVoted) return;
     
-    setVoteData(prev => ({
-      pullLeverVotes: choice === 'pull' ? prev.pullLeverVotes + 1 : prev.pullLeverVotes,
-      doNothingVotes: choice === 'nothing' ? prev.doNothingVotes + 1 : prev.doNothingVotes,
-      totalVotes: prev.totalVotes + 1,
-    }));
-    
-    setHasVoted(true);
-    setUserVote(choice);
+    try {
+      setSubmitting(true);
+      setError(null);
+
+      const response = await fetch(`${API_URL}/votes`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ choice }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to submit vote');
+      }
+
+      const data = await response.json();
+      setVoteData(data);
+      setHasVoted(true);
+      setUserVote(choice);
+      
+      // Store in localStorage to prevent duplicate voting
+      localStorage.setItem('trolley_has_voted', 'true');
+      localStorage.setItem('trolley_user_vote', choice);
+    } catch (err: any) {
+      setError(err.message);
+      console.error(err);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const handleSubmitReflection = () => {
-    if (!newReflection.trim() || !hasVoted) return;
+  const handleSubmitReflection = async () => {
+    if (!newReflection.trim() || !hasVoted || submitting) return;
     
-    const reflection: Reflection = {
-      id: Date.now().toString(),
-      text: newReflection,
-      choice: selectedChoice,
-      timestamp: new Date().toISOString(),
-      upvotes: 0,
-      downvotes: 0,
-    };
-    
-    setReflections([reflection, ...reflections]);
-    setNewReflection('');
+    try {
+      setSubmitting(true);
+      setError(null);
+
+      const response = await fetch(`${API_URL}/reflections`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          text: newReflection,
+          choice: selectedChoice,
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to submit reflection');
+
+      const data = await response.json();
+      setReflections([data, ...reflections]);
+      setNewReflection('');
+    } catch (err: any) {
+      setError(err.message);
+      console.error(err);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const handleReflectionVote = (id: string, voteType: 'up' | 'down') => {
-    setReflections(prev =>
-      prev.map(ref =>
-        ref.id === id
-          ? {
-              ...ref,
-              upvotes: voteType === 'up' ? ref.upvotes + 1 : ref.upvotes,
-              downvotes: voteType === 'down' ? ref.downvotes + 1 : ref.downvotes,
-            }
-          : ref
-      )
-    );
+  const handleReflectionVote = async (id: string, voteType: 'up' | 'down') => {
+    try {
+      const response = await fetch(`${API_URL}/reflections/${id}/vote`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ voteType }),
+      });
+
+      if (!response.ok) throw new Error('Failed to vote on reflection');
+
+      const updatedReflection = await response.json();
+      setReflections(prev =>
+        prev.map(ref => (ref._id === id ? updatedReflection : ref))
+      );
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const pullPercentage = voteData.totalVotes > 0 
@@ -145,6 +191,16 @@ function ReflectionPage() {
         <p className="text-gray-600">See how others have approached this moral dilemma</p>
       </div>
 
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="text-red-500" size={20} />
+            <p className="text-red-700">{error}</p>
+          </div>
+        </div>
+      )}
+
       {/* Voting Section */}
       <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl shadow-lg p-6 mb-8 border border-blue-100">
         <div className="flex items-center gap-2 mb-6">
@@ -158,7 +214,9 @@ function ReflectionPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <button
                 onClick={() => handleVote('pull')}
+                disabled={submitting}
                 className="bg-blue-600 text-white p-6 rounded-lg hover:bg-blue-700
+                           disabled:bg-gray-400 disabled:cursor-not-allowed
                            active:scale-95 transition-all shadow-md text-left"
               >
                 <div className="text-2xl mb-2">🔄</div>
@@ -168,7 +226,9 @@ function ReflectionPage() {
               
               <button
                 onClick={() => handleVote('nothing')}
+                disabled={submitting}
                 className="bg-gray-600 text-white p-6 rounded-lg hover:bg-gray-700
+                           disabled:bg-gray-400 disabled:cursor-not-allowed
                            active:scale-95 transition-all shadow-md text-left"
               >
                 <div className="text-2xl mb-2">⏸️</div>
@@ -248,6 +308,7 @@ function ReflectionPage() {
               rows={4}
               placeholder="What made this decision difficult for you? Share your reasoning..."
               maxLength={500}
+              disabled={submitting}
             />
             <div className="flex justify-between items-center mt-2">
               <span className="text-sm text-gray-500">{newReflection.length}/500</span>
@@ -257,6 +318,7 @@ function ReflectionPage() {
                   value={selectedChoice}
                   onChange={(e) => setSelectedChoice(e.target.value as 'pull' | 'nothing')}
                   className="border-2 border-gray-300 rounded px-3 py-1 text-sm"
+                  disabled={submitting}
                 >
                   <option value="pull">Pulled Lever</option>
                   <option value="nothing">Did Nothing</option>
@@ -267,12 +329,12 @@ function ReflectionPage() {
 
           <button
             onClick={handleSubmitReflection}
-            disabled={!newReflection.trim()}
+            disabled={!newReflection.trim() || submitting}
             className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700
                        disabled:bg-gray-400 disabled:cursor-not-allowed
                        active:scale-95 transition-all"
           >
-            Share Reflection
+            {submitting ? 'Submitting...' : 'Share Reflection'}
           </button>
         </div>
       )}
@@ -284,7 +346,7 @@ function ReflectionPage() {
         <div className="space-y-4">
           {reflections.map((reflection) => (
             <div
-              key={reflection.id}
+              key={reflection._id}
               className={`p-4 rounded-lg border-2 transition-all ${
                 reflection.choice === 'pull'
                   ? 'bg-blue-50 border-blue-200'
@@ -307,7 +369,7 @@ function ReflectionPage() {
 
               <div className="flex items-center gap-4">
                 <button
-                  onClick={() => handleReflectionVote(reflection.id, 'up')}
+                  onClick={() => handleReflectionVote(reflection._id, 'up')}
                   className="flex items-center gap-1 text-gray-600 hover:text-green-600
                              transition-colors"
                 >
@@ -316,7 +378,7 @@ function ReflectionPage() {
                 </button>
 
                 <button
-                  onClick={() => handleReflectionVote(reflection.id, 'down')}
+                  onClick={() => handleReflectionVote(reflection._id, 'down')}
                   className="flex items-center gap-1 text-gray-600 hover:text-red-600
                              transition-colors"
                 >
@@ -328,7 +390,7 @@ function ReflectionPage() {
           ))}
         </div>
 
-        {reflections.length === 0 && (
+        {reflections.length === 0 && !loading && (
           <div className="text-center py-8 text-gray-500">
             <MessageCircle size={48} className="mx-auto mb-3 opacity-50" />
             <p>No reflections yet. Be the first to share your thoughts!</p>
