@@ -21,8 +21,8 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/trolley-p
 // Vote Schema
 const voteSchema = new mongoose.Schema({
   choice: { type: String, enum: ['pull', 'nothing'], required: true },
-  ipAddress: { type: String }, // Optional: to prevent duplicate votes
-  userAgent: { type: String },
+  // ipAddress: { type: String }, // Optional: to prevent duplicate votes
+  // userAgent: { type: String },
   timestamp: { type: Date, default: Date.now }
 });
 
@@ -61,22 +61,22 @@ app.get('/api/votes', async (req, res) => {
 app.post('/api/votes', async (req, res) => {
   try {
     const { choice } = req.body;
-    const ipAddress = req.ip;
-    const userAgent = req.headers['user-agent'];
+    // const ipAddress = req.ip;
+    // const userAgent = req.headers['user-agent'];
 
     // Optional: Check if this IP has already voted
-    const existingVote = await Vote.findOne({ ipAddress });
-    if (existingVote) {
-      return res.status(400).json({ error: 'You have already voted' });
-    }
+    // const existingVote = await Vote.findOne({ ipAddress });
+    // if (existingVote) {
+    //   return res.status(400).json({ error: 'You have already voted' });
+    // }
 
-    const vote = new Vote({
-      choice,
-      ipAddress,
-      userAgent
-    });
+    // const vote = new Vote({
+    //   choice,
+    //   ipAddress,
+    //   userAgent
+    // });
 
-    await vote.save();
+    // await vote.save();
     
     // Return updated statistics
     const pullVotes = await Vote.countDocuments({ choice: 'pull' });
