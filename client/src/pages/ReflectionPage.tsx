@@ -9,6 +9,7 @@ interface VoteData {
   doNothingVotes: number;
   totalVotes: number;
 }
+ 
 
 interface Reflection {
   _id: string;
