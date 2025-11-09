@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ThumbsUp, ThumbsDown, Users, TrendingUp, MessageCircle, AlertCircle } from 'lucide-react';
-import { saveChoice } from '../utils/localStorage';
+// import { saveChoice } from '../utils/localStorage';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
