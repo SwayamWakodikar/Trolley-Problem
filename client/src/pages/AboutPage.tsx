@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Scale, Heart, Brain, Car, Shield, BookOpen } from 'lucide-react';
+import { Scale, Heart, Brain, Car, Shield, BookOpen, User, Split } from 'lucide-react';
 
 function AboutPage() {
   return (
@@ -121,7 +121,10 @@ function AboutPage() {
         </div>
 
         <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Variations of the Problem</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <Split className="text-blue-600" size={28} />
+            Variation
+          </h2>
 
           <div className="space-y-4">
             <div className="p-4 bg-gray-50 rounded-lg">
@@ -150,7 +153,7 @@ function AboutPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-md p-6">
+        <div className="bg-white rounded-lg shadow-md mb-8 p-6">
           <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
             <BookOpen className="text-blue-600" size={28} />
             Further Reading
@@ -188,6 +191,81 @@ function AboutPage() {
               by Philippa Foot (1967)
             </li>
           </ul>
+        </div>
+              <div className="bg-white rounded-lg shadow-md p-6">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <User className="text-BLACK-600" size={28} />
+            Made By
+          </h2>
+
+          
+              {/* <a
+                href="https://plato.stanford.edu/entries/doing-allowing/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:underline font-semibold"
+              >
+                Stanford Encyclopedia of Philosophy: Doing vs. Allowing Harm
+              </a> */}
+              <div className='text-3xl font-bold '> Name: Swayam Wakodikar</div>
+              <div className='text-3xl font-bold '>24BEC7056</div>
+              <br />
+              <ul className='text-xl font-medium'>
+                <ol className='space-y-3 list-disc'>
+                  <div className='text-2xl'>
+                    Team: -
+                  </div>
+                  <div className='pl-3 space-y-3'>
+                    <li>
+                    Soumik Paul 24BEC7010
+                  </li>
+                  <li>
+                    Shayan Siddiqui 24BEC7118
+                  </li>
+                  <li>
+                    N Syed Dawood Rehan 24BEC7076
+                  </li>
+                  <li>
+                    Adityanarayan Pandey 24BEC7129
+                  </li>
+                  <li>
+                    Nakhireddi Meghana 24BEC7012
+                  </li>
+                  <li>
+                    Gothina Bhuvana Sree 24BEC7037
+                  </li>
+                  <li>
+                    Vinjamuri Goutham 24BEC7109
+                  </li>
+                  <li>
+                    Gollapilli Sri Pranav 24BEC7120
+                  </li>
+                  </div>
+                  
+                </ol>
+              </ul>
+            
+            {/* <li>
+              <a
+                href="https://www.youtube.com/watch?v=bOpf6KcWYyw"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:underline font-semibold"
+              >
+                The Trolley Problem (TED-Ed Video)
+              </a>
+            </li>
+            <li>
+              <strong>Book:</strong> "Would You Kill the Fat Man?" by David Edmonds
+            </li>
+            <li>
+              <strong>Book:</strong> "The Trolley Problem Mysteries" by F.M. Kamm
+            </li>
+            <li>
+              <strong>Paper:</strong> "The Problem of Abortion and the Doctrine of Double Effect"
+              by Philippa Foot (1967)
+            </li>
+          </ul> */}
         </div>
       </motion.div>
     </div>
