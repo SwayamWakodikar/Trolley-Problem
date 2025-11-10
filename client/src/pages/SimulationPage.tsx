@@ -143,6 +143,7 @@ function SimulationPage() {
             <rect x="-5" y="-40" width="10" height="80" fill="#f59e0b" rx="2" 
                   style={{ transition: 'all 0.5s' }} />
             <circle cx="0" cy="-40" r="8" fill="#dc2626" />
+            
           </g>
         </svg>
       </div>

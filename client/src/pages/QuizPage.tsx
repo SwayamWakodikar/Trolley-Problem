@@ -11,41 +11,52 @@ interface Question {
 const questions: Question[] = [
   {
     id: 1,
-    question: 'A lie that saves someone from emotional pain is:',
+    question: 'A runaway trolley is heading toward five people tied to the track. You can pull a lever to divert it onto another track where one person is tied. What do you do?',
     options: [
-      { text: 'Acceptable if it prevents suffering', points: { utilitarian: 2, deontological: 0, virtue: 1 } },
-      { text: 'Never acceptable; honesty is paramount', points: { utilitarian: 0, deontological: 2, virtue: 1 } },
-      { text: 'Depends on the person\'s character and intentions', points: { utilitarian: 1, deontological: 0, virtue: 2 } },
+      { text: 'Pull the lever — saving five is better than one', points: { utilitarian: 2, deontological: 0, virtue: 0 } },
+      { text: 'Do nothing — intentionally killing is always wrong', points: { utilitarian: 0, deontological: 2, virtue: 1 } },
+      { text: 'Act based on compassion and your moral intuition', points: { utilitarian: 1, deontological: 0, virtue: 2 } },
     ],
   },
-  {
-    id: 2,
-    question: 'If you could save five strangers by sacrificing one, you should:',
-    options: [
-      { text: 'Do it - five lives outweigh one', points: { utilitarian: 2, deontological: 0, virtue: 0 } },
-      { text: 'Never - actively killing is always wrong', points: { utilitarian: 0, deontological: 2, virtue: 1 } },
-      { text: 'Consider the context and relationships involved', points: { utilitarian: 1, deontological: 1, virtue: 2 } },
-    ],
-  },
+{
+  id: 2,
+  question: `You are standing on a footbridge above a trolley track. A runaway trolley is heading toward five people tied to the track below. Next to you is a very large man; if you push him off the bridge onto the track his bulk will stop the trolley and save the five, but he will die. Would you push him?`,
+  options: [
+    {
+      text: 'Yes — push him to save five lives; sacrificing one to save many is justified.',
+      points: { utilitarian: 2, deontological: 0, virtue: 0 }
+    },
+    {
+      text: 'No — actively using someone as a means (pushing them to their death) is morally wrong even to save more people.',
+      points: { utilitarian: 0, deontological: 2, virtue: 1 }
+    },
+    {
+      text: 'I would hesitate and weigh compassion, respect, and my character — it depends on motives and context.',
+      points: { utilitarian: 1, deontological: 0, virtue: 2 }
+    },
+  ],
+}
+,
   {
     id: 3,
-    question: 'Stealing medicine to save a dying person is:',
+    question: 'A surgeon can save five patients needing organ transplants by sacrificing one healthy patient. Should the surgeon proceed?',
     options: [
-      { text: 'Justified by the good outcome', points: { utilitarian: 2, deontological: 0, virtue: 1 } },
-      { text: 'Wrong because stealing violates moral law', points: { utilitarian: 0, deontological: 2, virtue: 0 } },
-      { text: 'A complex situation requiring wisdom and compassion', points: { utilitarian: 1, deontological: 0, virtue: 2 } },
+      { text: 'Yes — saving more lives brings the greater good', points: { utilitarian: 2, deontological: 0, virtue: 0 } },
+      { text: 'No — killing an innocent person is always wrong', points: { utilitarian: 0, deontological: 2, virtue: 1 } },
+      { text: 'A virtuous doctor would refuse and seek another way', points: { utilitarian: 1, deontological: 0, virtue: 2 } },
     ],
   },
   {
     id: 4,
-    question: 'The most important factor in moral decision-making is:',
+    question: 'A self-driving car must choose between hitting five pedestrians or swerving and killing its passenger. How should it act?',
     options: [
-      { text: 'The consequences and outcomes', points: { utilitarian: 2, deontological: 0, virtue: 0 } },
-      { text: 'Following universal moral rules', points: { utilitarian: 0, deontological: 2, virtue: 0 } },
-      { text: 'Acting with virtue and good character', points: { utilitarian: 0, deontological: 0, virtue: 2 } },
+      { text: 'Swerve — minimize total harm regardless of who dies', points: { utilitarian: 2, deontological: 0, virtue: 0 } },
+      { text: 'Stay on course — the car must not intentionally harm its passenger', points: { utilitarian: 0, deontological: 2, virtue: 1 } },
+      { text: 'The car should act as a moral agent, reflecting fairness and empathy', points: { utilitarian: 1, deontological: 0, virtue: 2 } },
     ],
   },
 ];
+
 
 function QuizPage() {
   const [currentQuestion, setCurrentQuestion] = useState(0);
