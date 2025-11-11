@@ -10,36 +10,36 @@ function Navigation() {
     `flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
       isActive(path)
         ? 'bg-blue-600 text-white'
-        : 'text-gray-700 hover:bg-gray-200'
+        : 'text-gray-700 hover:bg-blue-200 '
     }`;
 
   return (
-    <nav className="bg-white shadow-md sticky top-0 z-50">
+    <nav className="bg-gray-700 shadow-md sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center">
-            <h1 className="text-3xl font-bold text-gray-900">The Trolley Paradox</h1>
+            <h1 className="text-3xl font-bold text-white">The Trolley Paradox</h1>
           </div>
           <div className="flex gap-2">
             <Link to="/" className={linkClass('/')}>
-              <Home size={18} />
-              <span className="hidden sm:inline">Home</span>
+              <Home size={18} className='text-white'/>
+              <span className="hidden sm:inline text-white" >Home</span>
             </Link>
             <Link to="/simulation" className={linkClass('/simulation')}>
-              <Play size={18} />
-              <span className="hidden sm:inline">Simulation</span>
+              <Play size={18} className='text-white'/>
+              <span className="hidden sm:inline text-white">Simulation</span>
             </Link>
             <Link to="/reflection" className={linkClass('/reflection')}>
-              <BookOpen size={18} />
-              <span className="hidden sm:inline">Reflection</span>
+              <BookOpen size={18} className='text-white' />
+              <span className="hidden sm:inline text-white">Reflection</span>
             </Link>
             <Link to="/about" className={linkClass('/about')}>
-              <Info size={18} />
-              <span className="hidden sm:inline">About</span>
+              <Info size={18} className='text-white'/>
+              <span className="hidden sm:inline text-white">About</span>
             </Link>
             <Link to="/quiz" className={linkClass('/quiz')}>
-              <Brain size={18} />
-              <span className="hidden sm:inline">Quiz</span>
+              <Brain size={18} className='text-white'/>
+              <span className="hidden sm:inline text-white">Quiz</span>
             </Link>
           </div>
         </div>
