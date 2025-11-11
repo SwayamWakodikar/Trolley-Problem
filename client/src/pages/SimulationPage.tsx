@@ -166,7 +166,6 @@ function SimulationPage() {
           </button>
         </div>
       )}
-
       {gameState === 'moving' && (
         <div className="text-center">
           <p className="text-2xl font-semibold text-gray-700">
