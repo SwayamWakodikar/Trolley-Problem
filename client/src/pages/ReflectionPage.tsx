@@ -100,8 +100,8 @@ function ReflectionPage() {
       
       
       // Store in localStorage to prevent duplicate voting
-      // localStorage.setItem('trolley_has_voted', 'true');
-      // localStorage.setItem('trolley_user_vote', choice);
+      localStorage.setItem('trolley_has_voted', 'true');
+      localStorage.setItem('trolley_user_vote', choice);
     } catch (err: any) {
       setError(err.message);
       console.error(err);
