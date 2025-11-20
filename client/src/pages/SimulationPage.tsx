@@ -80,7 +80,7 @@ function SimulationPage() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-3">
+    <div className="max-w-6xl mx-auto px-4 py-3 bg-gray-400">
       <div className="text-center mb-4">
         <h1 className="text-4xl font-bold text-gray-900 mb-4">The Trolley Dilemma</h1>
         <p className="text-gray-600">Make your choice before the trolley reaches the fork</p>
